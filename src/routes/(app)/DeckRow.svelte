@@ -112,10 +112,10 @@
         }, 1000);
     }
 
-    function handleSettingsClick() {
+    function handleSettingsClick(clear = false) {
         isSettingsOpen = !isSettingsOpen;
 
-        if (!isSettingsOpen) {
+        if (clear) {
             unique = Symbol();
         }
     }
@@ -421,8 +421,8 @@
             ></ColumnRefreshButton>
 
             {#if (!isJunk)}
-                <button class="deck-row-settings-button" aria-label="Settings" onclick={handleSettingsClick}>
-                    <Settings2 color="var(--text-color-3)"></Settings2>
+                <button class="deck-row-settings-button" class:deck-row-settings-button--open={isSettingsOpen} aria-label="Settings" onclick={handleSettingsClick}>
+                    <Settings2 color="var(--deck-row-settings-button-color, var(--text-color-3))"></Settings2>
                 </button>
             {/if}
         </div>
@@ -439,34 +439,34 @@
         {#if isIconPickerOpen}
             <ColumnIconPicker onchange={handleIconChange} onclose={() => {isIconPickerOpen = false}} current={column.settings?.icon}></ColumnIconPicker>
         {/if}
+
+        {#if isSettingsOpen}
+            <DeckSettingsModal {column} {index} {_agent} layout={$settings.design?.layout} onclose={handleSettingsClick}></DeckSettingsModal>
+        {/if}
     </div>
 
-    {#if isSettingsOpen}
-        <DeckSettingsModal {column} {index} {_agent} layout={$settings.design?.layout} onclose={handleSettingsClick}></DeckSettingsModal>
+    {#if _agent}
+        <div class="deck-row__content">
+            {#if (column.algorithm.type === 'notification')}
+                <NotificationTimeline {index} {isJunk} {_agent} {unique}></NotificationTimeline>
+            {:else if (column.algorithm.type === 'thread')}
+                <ThreadTimeline bind:column={column} index={index} {_agent} bind:isRefreshing={isRefreshing} {isJunk}></ThreadTimeline>
+            {:else if (column.algorithm.type === 'chat')}
+                <ChatTimeline {column} {index} {_agent} {unique} onrefresh={handleRefresh}></ChatTimeline>
+            {:else if (column.algorithm.type === 'list')}
+                {#key unique}
+                    <ListTimeline bind:column {index} {_agent} {unique}></ListTimeline>
+                {/key}
+            {:else if (column.algorithm.type === 'bookmark')}
+                <BookmarkTimeline bind:column {index} {_agent} {unique}></BookmarkTimeline>
+            {:else}
+                <Timeline {index} {_agent} {isJunk} {unique}></Timeline>
+            {/if}
+        </div>
     {:else}
-        {#if _agent}
-            <div class="deck-row__content">
-                {#if (column.algorithm.type === 'notification')}
-                    <NotificationTimeline {index} {isJunk} {_agent} {unique}></NotificationTimeline>
-                {:else if (column.algorithm.type === 'thread')}
-                    <ThreadTimeline bind:column={column} index={index} {_agent} bind:isRefreshing={isRefreshing} {isJunk}></ThreadTimeline>
-                {:else if (column.algorithm.type === 'chat')}
-                    <ChatTimeline {column} {index} {_agent} {unique} onrefresh={handleRefresh}></ChatTimeline>
-                {:else if (column.algorithm.type === 'list')}
-                    {#key unique}
-                        <ListTimeline bind:column {index} {_agent} {unique}></ListTimeline>
-                    {/key}
-                {:else if (column.algorithm.type === 'bookmark')}
-                    <BookmarkTimeline bind:column {index} {_agent} {unique}></BookmarkTimeline>
-                {:else}
-                    <Timeline {index} {_agent} {isJunk} {unique}></Timeline>
-                {/if}
-            </div>
-        {:else}
-            <div class="deck-row__content">
-                <ColumnAgentMissing {column}></ColumnAgentMissing>
-            </div>
-        {/if}
+        <div class="deck-row__content">
+            <ColumnAgentMissing {column}></ColumnAgentMissing>
+        </div>
     {/if}
 </div>
 
@@ -792,6 +792,7 @@
             position: sticky !important;
             z-index: 100 !important;
             top: 52px;
+            border-radius: 0;
         }
 
         &--scroll-down {
@@ -813,6 +814,15 @@
 
         &:hover {
             background-color: var(--bg-color-2);
+        }
+
+        &--open {
+            background-color: var(--primary-color);
+            --deck-row-settings-button-color: var(--bg-color-1);
+
+            &:hover {
+                background-color: var(--primary-color);
+            }
         }
     }
 
